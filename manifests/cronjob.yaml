@@ -1,0 +1,55 @@
+apiVersion: batch/v1beta1
+kind: CronJob
+metadata:
+  name: slack-webhook-api-example
+  labels:
+    app.kubernetes.io/name: slack-webhook-api-example
+spec:
+  schedule: "0 * * * *"
+  concurrencyPolicy: Replace
+  jobTemplate:
+    spec:
+      template:
+        spec:
+          restartPolicy: Never
+          containers:
+          - name: slack-webhook-api-example
+            image: ruby:2.6.5
+            imagePullPolicy: IfNotPresent
+            workingDir: /usr/src/app
+            resources:
+              requests:
+                cpu: 500m
+                memory: 512Mi
+            command:
+            - /usr/src/app/entrypoint.sh
+            args:
+              - bundle
+              - exec
+              - ruby
+              - example.rb
+            envFrom:
+              - secretRef:
+                  name: slack-webhook-api-example-secrets
+            env:
+              - name: BUNDLE_PATH
+                value: /usr/src/bundle
+            volumeMounts:
+              - name: code
+                mountPath: /usr/src/app
+                readOnly: false
+          volumes:
+            - name: code
+              configMap:
+                name: slack-webhook-api-example-code
+                items:
+                - key: entrypoint.sh
+                  path: entrypoint.sh
+                  mode: 0755
+                - key: example.rb
+                  path: example.rb
+                  mode: 0755
+                - key: Gemfile
+                  path: Gemfile
+                - key: Gemfile.lock
+                  path: Gemfile.lock
